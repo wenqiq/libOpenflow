@@ -20,6 +20,13 @@ jobs:
     - name: Run unit tests
       run: |
         make test
+    - name: Upload coverage reports to Codecov
+      run: |
+        # Replace `linux` below with the appropriate OS
+        # Options are `alpine`, `linux`, `macos`, `windows`
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        ./codecov -c -t ${CODECOV_TOKEN} -f cover.out -F unit-tests 
 
   tidy:
     runs-on: [ubuntu-latest]

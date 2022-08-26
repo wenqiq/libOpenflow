@@ -4,7 +4,7 @@ all: test
 
 .PHONY: test
 test:
-	$(GO) test -v ./...
+	$(GO) test -v -coverprofile cover.out ./...
 
 # code linting
 .golangci-bin:

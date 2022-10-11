@@ -25,11 +25,8 @@ coverage:
     project:
       default:
         target: auto
-        threshold: 0.3%
+        threshold: 0.1%
 
 flag_management:
   default_rules:
     carryforward: true
-
-ignore:
-  - "**/testing/*.go"

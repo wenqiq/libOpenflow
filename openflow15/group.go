@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 
-	log "github.com/sirupsen/logrus"
+	"k8s.io/klog/v2"
 
 	"antrea.io/libOpenflow/common"
 	"antrea.io/libOpenflow/util"
@@ -18,6 +18,15 @@ const (
 	OFPG_ALL = 0xfffffffc /* Represents all groups for group delete commands. */
 	OFPG_ANY = 0xffffffff /* Wildcard group used only for flow stats requests. Selects all flows regardless of group (including flows with no group).
 	 */
+)
+
+const (
+	OFPG_BUCKET_MAX   = 0xffffff00 /* Last usable bucket ID. */
+	OFPG_BUCKET_FIRST = 0xfffffffd /* First bucket ID in the list of action buckets of a group. This is applicable
+	for OFPGC_INSERT_BUCKET and OFPGC_REMOVE_BUCKET commands. */
+	OFPG_BUCKET_LAST = 0xfffffffe /* Last bucket ID in the list of action buckets of a group. This is applicable
+	for OFPGC_INSERT_BUCKET and OFPGC_REMOVE_BUCKET commands. */
+	OFPG_BUCKET_ALL = 0xffffffff /* All action buckets in a group. This is applicable for only OFPGC_REMOVE_BUCKET command. */
 )
 
 const (
@@ -118,7 +127,7 @@ func (g *GroupMod) MarshalBinary() (data []byte, err error) {
 		}
 		data = append(data, bytes...)
 		g.BucketArrayLen += bkt.Len()
-		log.Debugf("Groupmod bucket: %v", bytes)
+		klog.V(4).InfoS("Groupmod bucket", "bytes", bytes)
 	}
 
 	for _, p := range g.Properties {
@@ -128,7 +137,7 @@ func (g *GroupMod) MarshalBinary() (data []byte, err error) {
 		}
 		data = append(data, bytes...)
 	}
-	log.Debugf("GroupMod(%d): %v", len(data), data)
+	klog.V(4).InfoS("GroupMod MarshalBinary succeeded", "dataLength", len(data), "data", data)
 
 	return
 }
@@ -159,6 +168,7 @@ func (g *GroupMod) UnmarshalBinary(data []byte) (err error) {
 		bkt := new(Bucket)
 		err = bkt.UnmarshalBinary(data[n:])
 		if err != nil {
+			klog.ErrorS(err, "Failed to unmarshal GroupMod's Bucket", "data", data[n:])
 			return
 		}
 		g.Buckets = append(g.Buckets, *bkt)
@@ -176,6 +186,7 @@ func (g *GroupMod) UnmarshalBinary(data []byte) (err error) {
 		}
 		err = p.UnmarshalBinary(data[n:])
 		if err != nil {
+			klog.ErrorS(err, "Failed to unmarshal GroupMod's Properties", "data", data[n:])
 			return err
 		}
 		n += p.Len()
@@ -286,6 +297,7 @@ func (b *Bucket) UnmarshalBinary(data []byte) (err error) {
 	for n < 8+b.ActionArrayLen {
 		a, err := DecodeAction(data[n:])
 		if err != nil {
+			klog.ErrorS(err, "Failed to decode Bucket action", "data", data[n:])
 			return err
 		}
 		b.Actions = append(b.Actions, a)
@@ -309,6 +321,7 @@ func (b *Bucket) UnmarshalBinary(data []byte) (err error) {
 		}
 		err = p.UnmarshalBinary(data[n:])
 		if err != nil {
+			klog.ErrorS(err, "Failed to decode Bucket property", "data", data[n:])
 			return err
 		}
 		n += p.Len()
